@@ -10,6 +10,11 @@ import (
 	"github.com/huandu/skiplist"
 )
 
+// === RUN   TestTire
+// 0.1475573
+// --- PASS: TestTire (0.16s)
+// PASS
+// ok      gotrie/nodetrie 0.216s
 func TestTire(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	var trie = NewNodeTrie(7)
@@ -25,8 +30,14 @@ func TestTire(t *testing.T) {
 
 	}
 	fmt.Println(time.Since(start).Seconds())
-	time.Sleep(time.Second * 5)
+	// time.Sleep(time.Second * 5)
 }
+
+// === RUN   TestSkipList
+// 0.1752606
+// --- PASS: TestSkipList (0.18s)
+// PASS
+// ok      gotrie/nodetrie 0.218s
 
 func TestSkipList(t *testing.T) {
 	var list = skiplist.New(skiplist.String)
@@ -41,5 +52,11 @@ func TestSkipList(t *testing.T) {
 		list.Get(k)
 	}
 	fmt.Println(time.Since(start).Seconds())
-	time.Sleep(time.Second * 5)
+	// time.Sleep(time.Second * 5)
+}
+
+func TestArrayMem(t *testing.T) {
+	var array [10000000]byte
+	fmt.Println(len(array), array[0])
+	time.Sleep(time.Second * 10)
 }
