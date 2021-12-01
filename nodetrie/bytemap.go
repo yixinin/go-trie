@@ -1,11 +1,13 @@
 package nodetrie
 
 type ByteMap struct {
-	buckets [256]*TrieNode
+	buckets []*TrieNode
 }
 
 func NewByteMap() *ByteMap {
-	return &ByteMap{}
+	return &ByteMap{
+		buckets: make([]*TrieNode, 256),
+	}
 }
 
 func (m *ByteMap) Set(k byte, v *TrieNode) {

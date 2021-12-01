@@ -1,14 +1,18 @@
 package nodetrie
 
+import "strconv"
+
 type NodeTrie struct {
-	root *TrieNode
-	head *TrieNode
-	tail *TrieNode
+	keySize int
+	root    *TrieNode
+	head    *TrieNode
+	tail    *TrieNode
 }
 
-func NewNodeTrie() *NodeTrie {
+func NewNodeTrie(keySize int) *NodeTrie {
 	return &NodeTrie{
-		root: NewTrieNode(0, nil),
+		root:    NewTrieNode(0, nil, nil),
+		keySize: keySize,
 	}
 }
 
@@ -17,27 +21,31 @@ type TrieNode struct {
 	Next     *TrieNode
 	k        byte
 	keys     []byte
-	children *ByteMap
+	val      interface{}
+	children *Nmap
 }
 
-func NewTrieNode(k byte, key []byte) *TrieNode {
+func NewTrieNode(k byte, key []byte, val interface{}) *TrieNode {
 	return &TrieNode{
-		children: NewByteMap(),
+		children: NewNmap(),
 		k:        k,
 		keys:     key,
+		val:      val,
 	}
 }
 
-func (t *NodeTrie) Insert(ks []byte) {
-	var size = len(ks)
+func (t *NodeTrie) Set(key []byte, v interface{}) {
+	if len(key) != t.keySize {
+		panic("key size should be " + strconv.Itoa(t.keySize))
+	}
 	cur := t.root
-	for i, k := range ks {
+	for i, k := range key {
 		if _, ok := cur.children.Get(k); !ok {
 			var node *TrieNode
-			if i == size-1 {
-				node = NewTrieNode(k, ks)
+			if i == t.keySize-1 {
+				node = NewTrieNode(k, key, v)
 			} else {
-				node = NewTrieNode(k, nil)
+				node = NewTrieNode(k, nil, nil)
 			}
 
 			cur.children.Set(k, node)
@@ -56,7 +64,6 @@ func (t *NodeTrie) Insert(ks []byte) {
 						node.Prev = prevTail
 					}
 				}
-
 			}
 		}
 		cur, _ = cur.children.Get(k)
@@ -74,6 +81,38 @@ func (t *NodeTrie) Insert(ks []byte) {
 	if t.tail.Next == cur {
 		t.tail = cur
 	}
+}
+func (t *NodeTrie) Get(key []byte) (interface{}, bool) {
+	cur := t.root
+	var ok bool
+	for _, k := range key {
+		cur, ok = cur.children.Get(k)
+		if !ok {
+			return nil, false
+		}
+		if len(cur.keys) > 0 {
+			return cur.val, true
+		}
+	}
+	return nil, false
+}
+func (t *NodeTrie) Gt(key []byte, e bool) interface{} {
+	cur := t.root
+	var ok bool
+	for _, k := range key {
+		cur, ok = cur.children.Get(k)
+		if !ok {
+			return nil
+		}
+		if e && len(cur.keys) > 0 {
+			return cur.val
+		}
+	}
+	return nil
+}
+
+func (t *NodeTrie) Lt(key []byte, e bool) {
+
 }
 
 func (t *NodeTrie) Foreach(f func(k []byte)) {
