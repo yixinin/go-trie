@@ -1,10 +1,10 @@
-package nodetrie
+package trie
 
 type Nmap struct {
 	buckets [10]*TrieNode
 }
 
-func NewNmap() *Nmap {
+func NewNmap() NodeContainer {
 	return &Nmap{}
 }
 
@@ -46,21 +46,21 @@ func (m *Nmap) Next(k byte) *TrieNode {
 	}
 	return nil
 }
-func (m *Nmap) Head() (byte, *TrieNode) {
+func (m *Nmap) Head() *TrieNode {
 	for i := 0; i < 10; i++ {
 		if v := m.buckets[byte(i)]; v != nil {
-			return byte(i) + '0', v
+			return v
 		}
 	}
-	return 0, nil
+	return nil
 }
-func (m *Nmap) Tail() (byte, *TrieNode) {
-	for i := 9; i < 10; i-- {
+func (m *Nmap) Tail() *TrieNode {
+	for i := 9; i >= 0; i-- {
 		if v := m.buckets[byte(i)]; v != nil {
-			return byte(i) + '0', v
+			return v
 		}
 	}
-	return 0, nil
+	return nil
 }
 func (m *Nmap) Keys() []byte {
 	var keys = make([]byte, 0, 10)

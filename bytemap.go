@@ -1,10 +1,10 @@
-package nodetrie
+package trie
 
 type ByteMap struct {
 	buckets []*TrieNode
 }
 
-func NewByteMap() *ByteMap {
+func NewByteMap() NodeContainer {
 	return &ByteMap{
 		buckets: make([]*TrieNode, 256),
 	}
@@ -48,21 +48,21 @@ func (m *ByteMap) Next(k byte) *TrieNode {
 	}
 	return nil
 }
-func (m *ByteMap) Head() (byte, *TrieNode) {
+func (m *ByteMap) Head() *TrieNode {
 	for i := 0; i < 256; i++ {
 		if v := m.buckets[byte(i)]; v != nil {
-			return byte(i), v
+			return v
 		}
 	}
-	return 0, nil
+	return nil
 }
-func (m *ByteMap) Tail() (byte, *TrieNode) {
+func (m *ByteMap) Tail() *TrieNode {
 	for i := 255; i >= 0; i-- {
 		if v := m.buckets[byte(i)]; v != nil {
-			return byte(i), v
+			return v
 		}
 	}
-	return 0, nil
+	return nil
 }
 func (m *ByteMap) Keys() []byte {
 	var keys = make([]byte, 0, 256)

@@ -1,35 +1,35 @@
-package nodetrie
+package trie
 
 type HexMap struct {
 	buckets [16]*TrieNode
 }
 
-func NewHexMap() *HexMap {
+func NewHexMap() NodeContainer {
 	return &HexMap{}
 }
 
 func toIndex(k uint8) uint8 {
-	if k > 'a' {
-		return k - 'a' + '9'
+	if k >= 'a' {
+		return k - 'a' + 9
 	}
 	return k - '0'
 }
 func toChar(k int) uint8 {
 	if k > 9 {
-		return uint8(k) + 'a' - '9'
+		return uint8(k) + 'a' - 9
 	}
 	return uint8(k) + '0'
 }
 func (m *HexMap) Set(k uint8, v *TrieNode) {
 	k = toIndex(k)
-	for i := k - 1; i < 17; i-- {
+	for i := k - 1; i < 16; i-- {
 		if m.buckets[i] != nil {
 			m.buckets[i].Next = v
 			v.Prev = m.buckets[i]
 			break
 		}
 	}
-	for i := k + 1; i < 17; i++ {
+	for i := k + 1; i < 16; i++ {
 		if m.buckets[i] != nil {
 			m.buckets[i].Prev = v
 			v.Next = m.buckets[i]
@@ -62,24 +62,24 @@ func (m *HexMap) Next(k uint8) *TrieNode {
 	}
 	return nil
 }
-func (m *HexMap) Head() (uint8, *TrieNode) {
-	for i := 0; i < 17; i++ {
+func (m *HexMap) Head() *TrieNode {
+	for i := 0; i < 16; i++ {
 		if v := m.buckets[uint8(i)]; v != nil {
-			return toChar(i), v
+			return v
 		}
 	}
-	return 0, nil
+	return nil
 }
-func (m *HexMap) Tail() (uint8, *TrieNode) {
-	for i := 9; i < 17; i-- {
+func (m *HexMap) Tail() *TrieNode {
+	for i := 15; i >= 0; i-- {
 		if v := m.buckets[uint8(i)]; v != nil {
-			return toChar(i), v
+			return v
 		}
 	}
-	return 0, nil
+	return nil
 }
 func (m *HexMap) Keys() []uint8 {
-	var keys = make([]uint8, 0, 17)
+	var keys = make([]uint8, 0, 16)
 	for i, v := range m.buckets {
 		if v != nil {
 			keys = append(keys, toChar(i))

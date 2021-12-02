@@ -1,18 +1,22 @@
-package nodetrie
+package trie
 
-import "strconv"
+import (
+	"strconv"
+)
 
-type NodeTrie struct {
-	keySize int
-	root    *TrieNode
-	head    *TrieNode
-	tail    *TrieNode
+type Trie struct {
+	keySize   int
+	root      *TrieNode
+	head      *TrieNode
+	tail      *TrieNode
+	container func() NodeContainer
 }
 
-func NewNodeTrie(keySize int) *NodeTrie {
-	return &NodeTrie{
-		root:    NewTrieNode(0, nil, nil),
-		keySize: keySize,
+func NewTrie(keySize int, container func() NodeContainer) *Trie {
+	return &Trie{
+		root:      NewTrieNode(0, nil, nil, container),
+		keySize:   keySize,
+		container: container,
 	}
 }
 
@@ -22,19 +26,22 @@ type TrieNode struct {
 	k        byte
 	keys     []byte
 	val      interface{}
-	children *Nmap
+	children NodeContainer
 }
 
-func NewTrieNode(k byte, key []byte, val interface{}) *TrieNode {
+func NewTrieNode(k byte, key []byte, val interface{}, nodeContainer func() NodeContainer) *TrieNode {
+	if nodeContainer == nil {
+		panic("nodeContainer is nil")
+	}
 	return &TrieNode{
-		children: NewNmap(),
+		children: nodeContainer(),
 		k:        k,
 		keys:     key,
 		val:      val,
 	}
 }
 
-func (t *NodeTrie) Set(key []byte, v interface{}) {
+func (t *Trie) Set(key []byte, v interface{}) {
 	if len(key) != t.keySize {
 		panic("key size should be " + strconv.Itoa(t.keySize))
 	}
@@ -43,23 +50,23 @@ func (t *NodeTrie) Set(key []byte, v interface{}) {
 		if _, ok := cur.children.Get(k); !ok {
 			var node *TrieNode
 			if i == t.keySize-1 {
-				node = NewTrieNode(k, key, v)
+				node = NewTrieNode(k, key, v, t.container)
 			} else {
-				node = NewTrieNode(k, nil, nil)
+				node = NewTrieNode(k, nil, nil, t.container)
 			}
 
 			cur.children.Set(k, node)
-			if _, tail := cur.children.Tail(); tail == node {
+			if tail := cur.children.Tail(); tail == node {
 				if next := cur.Next; next != nil {
-					if _, nextHead := next.children.Head(); nextHead != nil {
+					if nextHead := next.children.Head(); nextHead != nil {
 						nextHead.Prev = node
 						node.Next = nextHead
 					}
 				}
 			}
-			if _, head := cur.children.Head(); head == node {
+			if head := cur.children.Head(); head == node {
 				if prev := cur.Prev; prev != nil {
-					if _, prevTail := prev.children.Tail(); prevTail != nil {
+					if prevTail := prev.children.Tail(); prevTail != nil {
 						prevTail.Next = node
 						node.Prev = prevTail
 					}
@@ -82,7 +89,7 @@ func (t *NodeTrie) Set(key []byte, v interface{}) {
 		t.tail = cur
 	}
 }
-func (t *NodeTrie) Get(key []byte) (interface{}, bool) {
+func (t *Trie) Get(key []byte) (interface{}, bool) {
 	cur := t.root
 	var ok bool
 	for _, k := range key {
@@ -96,7 +103,7 @@ func (t *NodeTrie) Get(key []byte) (interface{}, bool) {
 	}
 	return nil, false
 }
-func (t *NodeTrie) Gt(key []byte, e bool) interface{} {
+func (t *Trie) Gt(key []byte, e bool) interface{} {
 	cur := t.root
 	var ok bool
 	for _, k := range key {
@@ -111,11 +118,11 @@ func (t *NodeTrie) Gt(key []byte, e bool) interface{} {
 	return nil
 }
 
-func (t *NodeTrie) Lt(key []byte, e bool) {
+func (t *Trie) Lt(key []byte, e bool) {
 
 }
 
-func (t *NodeTrie) Foreach(f func(k []byte)) {
+func (t *Trie) Foreach(f func(k []byte)) {
 	for cur := t.head; cur != nil; cur = cur.Next {
 		f(cur.keys)
 	}
