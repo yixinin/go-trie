@@ -1,6 +1,6 @@
 package trie
 
-type NodeContainer interface {
+type Container interface {
 	Set(k byte, v *TrieNode)
 	Get(k byte) (*TrieNode, bool)
 	Prev(k uint8) *TrieNode
@@ -8,4 +8,5 @@ type NodeContainer interface {
 	Head() *TrieNode
 	Tail() *TrieNode
 	Keys() []byte
+	Pad() byte
 }

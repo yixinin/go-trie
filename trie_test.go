@@ -61,7 +61,33 @@ func TestArrayMem(t *testing.T) {
 	fmt.Println(len(array), array[0])
 	time.Sleep(time.Second * 10)
 	for i := range array {
-		array[i] = NewTrieNode('a', []byte{1, 2, 3}, "aaa", NewHexMap)
+		array[i] = newTrieNode('a', []byte{1, 2, 3}, "aaa", NewHexMap)
 	}
 	time.Sleep(time.Second * 10)
+}
+
+func TestGt(t *testing.T) {
+	var size = 10
+	var trie = NewTrie(3, NewNmap)
+	var keys = make([][]byte, 0, size)
+	for i := 101; i < 200; i += 10 {
+		key := []byte(fmt.Sprint(i))
+		keys = append(keys, key)
+		trie.Set(key, key)
+	}
+	v := trie.Gt([]byte("110"))
+	fmt.Printf("%s\n", v)
+}
+
+func TestLt(t *testing.T) {
+	var size = 10
+	var trie = NewTrie(3, NewNmap)
+	var keys = make([][]byte, 0, size)
+	for i := 101; i < 200; i += 10 {
+		key := []byte(fmt.Sprint(i))
+		keys = append(keys, key)
+		trie.Set(key, key)
+	}
+	v := trie.Lte([]byte("191"))
+	fmt.Printf("%s\n", v)
 }

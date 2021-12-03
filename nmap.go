@@ -4,22 +4,22 @@ type Nmap struct {
 	buckets [10]*TrieNode
 }
 
-func NewNmap() NodeContainer {
+func NewNmap() Container {
 	return &Nmap{}
 }
 
 func (m *Nmap) Set(k byte, v *TrieNode) {
 	for i := k - 1 - '0'; i < 10; i-- {
 		if m.buckets[i] != nil {
-			m.buckets[i].Next = v
-			v.Prev = m.buckets[i]
+			m.buckets[i].next = v
+			v.prev = m.buckets[i]
 			break
 		}
 	}
 	for i := k + 1 - '0'; i < 10; i++ {
 		if m.buckets[i] != nil {
-			m.buckets[i].Prev = v
-			v.Next = m.buckets[i]
+			m.buckets[i].prev = v
+			v.next = m.buckets[i]
 			break
 		}
 	}
@@ -31,7 +31,7 @@ func (m *Nmap) Get(k byte) (*TrieNode, bool) {
 }
 
 func (m *Nmap) Prev(k byte) *TrieNode {
-	for i := k - '0' - 1; i < k; i-- {
+	for i := k - '0' - 1; i < k-'0'; i-- {
 		if m.buckets[i] != nil {
 			return m.buckets[i]
 		}
@@ -39,7 +39,7 @@ func (m *Nmap) Prev(k byte) *TrieNode {
 	return nil
 }
 func (m *Nmap) Next(k byte) *TrieNode {
-	for i := k - '0' + 1; i > k; i++ {
+	for i := k - '0' + 1; i < 10; i++ {
 		if m.buckets[i] != nil {
 			return m.buckets[i]
 		}
@@ -70,4 +70,8 @@ func (m *Nmap) Keys() []byte {
 		}
 	}
 	return keys
+}
+
+func (m *Nmap) Pad() byte {
+	return '0'
 }

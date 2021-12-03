@@ -6,7 +6,7 @@ type LinkMap struct {
 	tail    *TrieNode
 }
 
-func NewLinkmap() NodeContainer {
+func NewLinkmap() Container {
 	return &LinkMap{
 		buckets: make(map[byte]*TrieNode, 1),
 	}
@@ -23,45 +23,45 @@ func (m *LinkMap) Set(k byte, v *TrieNode) {
 		m.tail = v
 		return
 	}
-	if k < m.head.k {
+	if k < m.head.nodeKey {
 		head := m.head
-		v.Next = head
-		head.Prev = v
+		v.next = head
+		head.prev = v
 		m.head = v
 		return
 	}
-	if k > m.tail.k {
+	if k > m.tail.nodeKey {
 		tail := m.head
-		v.Prev = tail
-		tail.Next = v
+		v.prev = tail
+		tail.next = v
 		m.tail = v
 		return
 	}
 	left := m.head
 	right := m.tail
-	for left.k < right.k {
-		if left.k < k && left.Next.k > k {
-			next := left.Next
+	for left.nodeKey < right.nodeKey {
+		if left.nodeKey < k && left.next.nodeKey > k {
+			next := left.next
 
-			left.Next = v
-			v.Prev = left
+			left.next = v
+			v.prev = left
 
-			v.Next = next
-			next.Prev = v
+			v.next = next
+			next.prev = v
 			return
 		}
-		if right.k > k && right.Prev.k < k {
-			prev := right.Prev
+		if right.nodeKey > k && right.prev.nodeKey < k {
+			prev := right.prev
 
-			right.Prev = v
-			v.Next = right
+			right.prev = v
+			v.next = right
 
-			v.Prev = prev
-			prev.Next = v
+			v.prev = prev
+			prev.next = v
 			return
 		}
-		left = left.Next
-		right = right.Prev
+		left = left.next
+		right = right.prev
 	}
 	panic(k)
 }
@@ -74,14 +74,14 @@ func (m *LinkMap) Get(k byte) (*TrieNode, bool) {
 func (m *LinkMap) Prev(k uint8) *TrieNode {
 	v, ok := m.buckets[k]
 	if ok {
-		return v.Prev
+		return v.prev
 	}
 	return nil
 }
 func (m *LinkMap) Next(k byte) *TrieNode {
 	v, ok := m.buckets[k]
 	if ok {
-		return v.Next
+		return v.next
 	}
 	return nil
 }
@@ -99,8 +99,12 @@ func (m *LinkMap) Tail() *TrieNode {
 }
 func (m *LinkMap) Keys() []byte {
 	var keys = make([]byte, 0, len(m.buckets))
-	for cur := m.head; cur != nil; cur = cur.Next {
-		keys = append(keys, cur.k)
+	for cur := m.head; cur != nil; cur = cur.next {
+		keys = append(keys, cur.nodeKey)
 	}
 	return keys
+}
+
+func (m *LinkMap) Pad() byte {
+	return 0
 }

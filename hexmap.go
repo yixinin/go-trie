@@ -4,7 +4,7 @@ type HexMap struct {
 	buckets [16]*TrieNode
 }
 
-func NewHexMap() NodeContainer {
+func NewHexMap() Container {
 	return &HexMap{}
 }
 
@@ -24,15 +24,15 @@ func (m *HexMap) Set(k uint8, v *TrieNode) {
 	k = toIndex(k)
 	for i := k - 1; i < 16; i-- {
 		if m.buckets[i] != nil {
-			m.buckets[i].Next = v
-			v.Prev = m.buckets[i]
+			m.buckets[i].next = v
+			v.prev = m.buckets[i]
 			break
 		}
 	}
 	for i := k + 1; i < 16; i++ {
 		if m.buckets[i] != nil {
-			m.buckets[i].Prev = v
-			v.Next = m.buckets[i]
+			m.buckets[i].prev = v
+			v.next = m.buckets[i]
 			break
 		}
 	}
@@ -86,4 +86,8 @@ func (m *HexMap) Keys() []uint8 {
 		}
 	}
 	return keys
+}
+
+func (m *HexMap) Pad() byte {
+	return '0'
 }

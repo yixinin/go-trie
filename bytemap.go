@@ -4,7 +4,7 @@ type ByteMap struct {
 	buckets []*TrieNode
 }
 
-func NewByteMap() NodeContainer {
+func NewByteMap() Container {
 	return &ByteMap{
 		buckets: make([]*TrieNode, 256),
 	}
@@ -13,15 +13,15 @@ func NewByteMap() NodeContainer {
 func (m *ByteMap) Set(k byte, v *TrieNode) {
 	for i := k - 1; i < k; i-- {
 		if m.buckets[i] != nil {
-			m.buckets[i].Next = v
-			v.Prev = m.buckets[i]
+			m.buckets[i].next = v
+			v.prev = m.buckets[i]
 			break
 		}
 	}
 	for i := k + 1; i > k; i++ {
 		if m.buckets[i] != nil {
-			m.buckets[i].Prev = v
-			v.Next = m.buckets[i]
+			m.buckets[i].prev = v
+			v.next = m.buckets[i]
 			break
 		}
 	}
@@ -72,4 +72,8 @@ func (m *ByteMap) Keys() []byte {
 		}
 	}
 	return keys
+}
+
+func (m *ByteMap) Pad() byte {
+	return 0
 }
