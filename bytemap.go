@@ -31,6 +31,22 @@ func (m *ByteMap) Get(k byte) (*TrieNode, bool) {
 	v := m.buckets[k]
 	return v, v != nil
 }
+func (m *ByteMap) Del(k byte) bool {
+	v := m.buckets[k]
+	if v != nil {
+		prev := v.prev
+		next := v.next
+		if prev != nil {
+			prev.next = next
+		}
+		if next != nil {
+			next.prev = prev
+		}
+		m.buckets[k] = nil
+		return true
+	}
+	return false
+}
 
 func (m *ByteMap) Prev(k byte) *TrieNode {
 	for i := k - 1; i < k; i-- {

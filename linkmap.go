@@ -31,7 +31,7 @@ func (m *LinkMap) Set(k byte, v *TrieNode) {
 		return
 	}
 	if k > m.tail.nodeKey {
-		tail := m.head
+		tail := m.tail
 		v.prev = tail
 		tail.next = v
 		m.tail = v
@@ -69,6 +69,23 @@ func (m *LinkMap) Set(k byte, v *TrieNode) {
 func (m *LinkMap) Get(k byte) (*TrieNode, bool) {
 	v, ok := m.buckets[k]
 	return v, ok
+}
+
+func (m *LinkMap) Del(k byte) bool {
+	v, ok := m.buckets[k]
+	if ok {
+		prev := v.prev
+		next := v.next
+		if prev != nil {
+			prev.next = next
+		}
+		if next != nil {
+			next.prev = prev
+		}
+		delete(m.buckets, k)
+		return true
+	}
+	return false
 }
 
 func (m *LinkMap) Prev(k uint8) *TrieNode {

@@ -6,88 +6,70 @@ import (
 	"testing"
 	"time"
 
-	"github.com/huandu/skiplist"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// === RUN   TestTire
-// 0.1475573
-// --- PASS: TestTire (0.16s)
-// PASS
-// ok      gotrie/nodetrie 0.216s
+var size = 10000000
+
 func TestTire(t *testing.T) {
-	var size = 1000000
 	var trie = NewTrie(24, NewHexMap)
 	var keys = make([][]byte, 0, size)
 	start := time.Now()
 	for i := 0; i < size; i++ {
 		key := []byte(primitive.NewObjectID().Hex())
 		keys = append(keys, key)
-		trie.Set(key, key)
+		trie.Set([]byte(key), key)
 	}
+	log.Println("set cost", time.Since(start).Seconds())
 	for _, k := range keys {
-		log.Println(trie.Get(k))
+		v, ok := trie.Get(k)
+		if !ok {
+			t.Logf("no key:%v fail\n", k)
+			t.Fail()
+			continue
+		}
+		if ok, i := SliceEq(v.([]byte), k); !ok {
+			t.Logf("key %d: %s-%s fails\n", i, k, v)
+			t.Fail()
+		}
 	}
-	fmt.Println(time.Since(start).Seconds())
-	// time.Sleep(time.Second * 5)
-}
-
-// === RUN   TestSkipList
-// 0.1752606
-// --- PASS: TestSkipList (0.18s)
-// PASS
-// ok      gotrie/nodetrie 0.218s
-
-func TestSkipList(t *testing.T) {
-	var size = 1000000
-	var list = skiplist.New(skiplist.Bytes)
-	var keys = make([][]byte, 0, size)
-	start := time.Now()
-	for i := 0; i < size; i++ {
-		key := []byte(primitive.NewObjectID().Hex())
-		keys = append(keys, key)
-		list.Set(key, key)
+	if trie.Len() != len(keys) {
+		t.Log("size not eq")
+		t.Fail()
 	}
-	for _, k := range keys {
-		list.Get(k)
-	}
-	fmt.Println(time.Since(start).Seconds())
-	// time.Sleep(time.Second * 5)
-}
-
-func TestArrayMem(t *testing.T) {
-	var array [10000000]*TrieNode
-
-	fmt.Println(len(array), array[0])
-	time.Sleep(time.Second * 10)
-	for i := range array {
-		array[i] = newTrieNode('a', []byte{1, 2, 3}, "aaa", NewHexMap)
-	}
-	time.Sleep(time.Second * 10)
+	log.Println("total cost", time.Since(start).Seconds())
 }
 
 func TestGt(t *testing.T) {
-	var size = 10
 	var trie = NewTrie(3, NewNmap)
-	var keys = make([][]byte, 0, size)
 	for i := 101; i < 200; i += 10 {
 		key := []byte(fmt.Sprint(i))
-		keys = append(keys, key)
 		trie.Set(key, key)
 	}
-	v := trie.Gt([]byte("110"))
+	v := trie.Gte([]byte("111"))
 	fmt.Printf("%s\n", v)
 }
 
 func TestLt(t *testing.T) {
-	var size = 10
 	var trie = NewTrie(3, NewNmap)
-	var keys = make([][]byte, 0, size)
 	for i := 101; i < 200; i += 10 {
 		key := []byte(fmt.Sprint(i))
-		keys = append(keys, key)
 		trie.Set(key, key)
 	}
 	v := trie.Lte([]byte("191"))
 	fmt.Printf("%s\n", v)
+}
+
+func TestScan(t *testing.T) {
+	var trie = NewTrie(3, NewNmap)
+	for i := 101; i < 200; i += 10 {
+		key := []byte(fmt.Sprint(i))
+		trie.Set(key, key)
+	}
+	trie.Del([]byte("131"))
+	vals := trie.Scan(Include([]byte("121")), Exclude([]byte("221")))
+	for _, v := range vals {
+		fmt.Printf("%s\n", v)
+	}
+
 }

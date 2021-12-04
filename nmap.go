@@ -9,29 +9,49 @@ func NewNmap() Container {
 }
 
 func (m *Nmap) Set(k byte, v *TrieNode) {
-	for i := k - 1 - '0'; i < 10; i-- {
+	k = k - '0'
+	for i := k - 1; i < 10; i-- {
 		if m.buckets[i] != nil {
 			m.buckets[i].next = v
 			v.prev = m.buckets[i]
 			break
 		}
 	}
-	for i := k + 1 - '0'; i < 10; i++ {
+	for i := k + 1; i < 10; i++ {
 		if m.buckets[i] != nil {
 			m.buckets[i].prev = v
 			v.next = m.buckets[i]
 			break
 		}
 	}
-	m.buckets[k-'0'] = v
+	m.buckets[k] = v
 }
 func (m *Nmap) Get(k byte) (*TrieNode, bool) {
 	v := m.buckets[k-'0']
 	return v, v != nil
 }
 
+func (m *Nmap) Del(k byte) bool {
+	k = k - '0'
+	v := m.buckets[k]
+	if v != nil {
+		prev := v.prev
+		next := v.next
+		if prev != nil {
+			prev.next = next
+		}
+		if next != nil {
+			next.prev = prev
+		}
+		m.buckets[k] = nil
+		return true
+	}
+	return false
+}
+
 func (m *Nmap) Prev(k byte) *TrieNode {
-	for i := k - '0' - 1; i < k-'0'; i-- {
+	k = k - '0'
+	for i := k - 1; i < k; i-- {
 		if m.buckets[i] != nil {
 			return m.buckets[i]
 		}
@@ -39,7 +59,8 @@ func (m *Nmap) Prev(k byte) *TrieNode {
 	return nil
 }
 func (m *Nmap) Next(k byte) *TrieNode {
-	for i := k - '0' + 1; i < 10; i++ {
+	k = k - '0'
+	for i := k + 1; i < 10; i++ {
 		if m.buckets[i] != nil {
 			return m.buckets[i]
 		}
