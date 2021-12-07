@@ -71,6 +71,36 @@ func TestMapTire(t *testing.T) {
 	log.Println("total cost", time.Since(start).Seconds())
 }
 
+func TestMap(t *testing.T) {
+	var m = make(map[string]string, size)
+	var keys = make([]string, 0, size)
+	start := time.Now()
+	for i := 0; i < size; i++ {
+		key := primitive.NewObjectID()
+		k := key.Hex()
+		keys = append(keys, k)
+		m[k] = k
+	}
+	log.Println("set cost", time.Since(start).Seconds())
+	for _, k := range keys {
+		v, ok := m[k]
+		if !ok {
+			t.Logf("no key:%v fail\n", k)
+			t.Fail()
+			continue
+		}
+		if ok, i := SliceEq([]byte(v), []byte(k)); !ok {
+			t.Logf("key %d: %s-%s fails\n", i, k, v)
+			t.Fail()
+		}
+	}
+	if len(m) != len(keys) {
+		t.Log("size not eq")
+		t.Fail()
+	}
+	log.Println("total cost", time.Since(start).Seconds())
+}
+
 func TestGt(t *testing.T) {
 	var trie = NewTrie(3, NewNmap)
 	for i := 101; i < 200; i += 10 {
