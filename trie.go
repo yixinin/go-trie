@@ -48,9 +48,10 @@ func (t *Trie) Set(key []byte, v interface{}) {
 	}
 
 	cur := t.root
+	var ok bool
 	for level, nodeKey := range key {
-		if node, ok := cur.children.Get(nodeKey); !ok {
-			var node *TrieNode
+		var node *TrieNode
+		if node, ok = cur.children.Get(nodeKey); !ok {
 			if level == t.keySize-1 {
 				node = newTrieNode(nodeKey, key, v, t.container)
 				t.size++
@@ -78,7 +79,7 @@ func (t *Trie) Set(key []byte, v interface{}) {
 		} else {
 			node.val = v
 		}
-		cur, _ = cur.children.Get(nodeKey)
+		cur = node
 	}
 
 	if t.head == nil {
