@@ -10,13 +10,13 @@ func NewHexMap() Container {
 
 func toIndex(k uint8) uint8 {
 	if k >= 'a' {
-		return k - 'a' + 9
+		return k - 'a' + 10
 	}
 	return k - '0'
 }
 func toChar(k int) uint8 {
 	if k > 9 {
-		return uint8(k) + 'a' - 9
+		return uint8(k) + 'a' - 10
 	}
 	return uint8(k) + '0'
 }
@@ -42,6 +42,24 @@ func (m *HexMap) Get(k uint8) (*TrieNode, bool) {
 	k = toIndex(k)
 	v := m.buckets[k]
 	return v, v != nil
+}
+
+func (m *HexMap) Del(k byte) bool {
+	k = toIndex(k)
+	v := m.buckets[k]
+	if v != nil {
+		prev := v.prev
+		next := v.next
+		if prev != nil {
+			prev.next = next
+		}
+		if next != nil {
+			next.prev = prev
+		}
+		m.buckets[k] = nil
+		return true
+	}
+	return false
 }
 
 func (m *HexMap) Prev(k uint8) *TrieNode {

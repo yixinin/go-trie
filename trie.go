@@ -10,6 +10,7 @@ type Trie struct {
 	head      *TrieNode
 	tail      *TrieNode
 	container func() Container
+	size      int
 }
 
 func NewTrie(keySize int, container func() Container) *Trie {
@@ -45,12 +46,14 @@ func (t *Trie) Set(key []byte, v interface{}) {
 	if len(key) != t.keySize {
 		panic("key size should be " + strconv.Itoa(t.keySize))
 	}
+
 	cur := t.root
 	for level, nodeKey := range key {
 		if node, ok := cur.children.Get(nodeKey); !ok {
 			var node *TrieNode
 			if level == t.keySize-1 {
 				node = newTrieNode(nodeKey, key, v, t.container)
+				t.size++
 			} else {
 				node = newTrieNode(nodeKey, nil, nil, t.container)
 			}
@@ -109,14 +112,53 @@ func (t *Trie) Get(key []byte) (interface{}, bool) {
 	return nil, false
 }
 
+func (t *Trie) Del(key []byte) bool {
+	if len(key) != t.keySize {
+		return false
+	}
+	cur := t.root
+	var stack = NewStack()
+	stack.Push(cur)
+	var ok bool
+	for _, k := range key {
+		cur, ok = cur.children.Get(k)
+		if !ok {
+			return false
+		}
+
+		if len(cur.key) > 0 {
+			// delete leaf
+			stack.Top().children.Del(k)
+			break
+		}
+		stack.Push(cur)
+	}
+	// delete parent
+	for {
+		cur := stack.Pop()
+		if cur.children.Head() == nil {
+			stack.Top().children.Del(cur.nodeKey)
+		} else {
+			break
+		}
+	}
+	return false
+}
+
 func (t *Trie) Gt(key []byte) interface{} {
-	return t.gt(key, false)
+	if node := t.gt(key, false); node != nil {
+		return node.val
+	}
+	return nil
 }
 
 func (t *Trie) Gte(key []byte) interface{} {
-	return t.gt(key, true)
+	if node := t.gt(key, true); node != nil {
+		return node.val
+	}
+	return nil
 }
-func (t *Trie) gt(key []byte, e bool) interface{} {
+func (t *Trie) gt(key []byte, e bool) *TrieNode {
 	key = t.PadRight(key)
 	cur := t.root
 	toNext := false
@@ -150,7 +192,7 @@ func (t *Trie) gt(key []byte, e bool) interface{} {
 
 		if len(cur.key) > 0 {
 			if e || toHead || toNext {
-				return cur.val
+				return cur
 			}
 			toNext = true
 			stack.Pop()
@@ -166,12 +208,18 @@ func (t *Trie) gt(key []byte, e bool) interface{} {
 }
 
 func (t *Trie) Lt(key []byte) interface{} {
-	return t.lt(key, false)
+	if node := t.lt(key, false); node != nil {
+		return node.val
+	}
+	return nil
 }
 func (t *Trie) Lte(key []byte) interface{} {
-	return t.lt(key, true)
+	if node := t.lt(key, true); node != nil {
+		return node.val
+	}
+	return nil
 }
-func (t *Trie) lt(key []byte, e bool) interface{} {
+func (t *Trie) lt(key []byte, e bool) *TrieNode {
 	key = t.PadRight(key)
 	cur := t.root
 	toPrev := false
@@ -205,7 +253,7 @@ func (t *Trie) lt(key []byte, e bool) interface{} {
 
 		if len(cur.key) > 0 {
 			if e || toTail || toPrev {
-				return cur.val
+				return cur
 			}
 			toPrev = true
 			stack.Pop()
@@ -236,4 +284,8 @@ func (t *Trie) PadRight(key []byte) []byte {
 		return fullKey
 	}
 	return key[:t.keySize]
+}
+
+func (t *Trie) Len() int {
+	return t.size
 }
