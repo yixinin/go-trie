@@ -4,7 +4,10 @@ type ByteMap struct {
 	buckets []*TrieNode
 }
 
-func NewByteMap() Container {
+func NewByteMap(init bool) Container {
+	if !init {
+		return nil
+	}
 	return &ByteMap{
 		buckets: make([]*TrieNode, 256),
 	}

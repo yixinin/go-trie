@@ -5,7 +5,7 @@ import (
 )
 
 func TestHexmap(t *testing.T) {
-	var m = NewHexMap()
+	var m = NewHexMap(true)
 	var keys = []byte("0123456789abcdef")
 	for _, k := range keys {
 		m.Set(k, newTrieNode(k, nil, k, NewHexMap))
@@ -33,7 +33,7 @@ func TestHexmap(t *testing.T) {
 }
 
 func TestNmap(t *testing.T) {
-	var m = NewNmap()
+	var m = NewNmap(true)
 	var keys = []byte("0123456789")
 	for _, k := range keys {
 		m.Set(k, newTrieNode(k, nil, k, NewNmap))
@@ -61,7 +61,7 @@ func TestNmap(t *testing.T) {
 }
 
 func TestLinkmap(t *testing.T) {
-	var m = NewLinkmap()
+	var m = NewLinkmap(true)
 	var keys = make([]byte, 0, 256)
 	for i := 0; i < 256; i++ {
 		keys = append(keys, byte(i))
@@ -92,7 +92,7 @@ func TestLinkmap(t *testing.T) {
 }
 
 func TestBytemap(t *testing.T) {
-	var m = NewByteMap()
+	var m = NewByteMap(true)
 	var keys = make([]byte, 0, 256)
 	for i := 0; i < 256; i++ {
 		keys = append(keys, byte(i))

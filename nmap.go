@@ -4,7 +4,10 @@ type Nmap struct {
 	buckets [10]*TrieNode
 }
 
-func NewNmap() Container {
+func NewNmap(init bool) Container {
+	if !init {
+		return nil
+	}
 	return &Nmap{}
 }
 

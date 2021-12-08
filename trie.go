@@ -9,11 +9,11 @@ type Trie struct {
 	root      *TrieNode
 	head      *TrieNode
 	tail      *TrieNode
-	container func() Container
+	container func(bool) Container
 	size      int
 }
 
-func NewTrie(keySize int, container func() Container) *Trie {
+func NewTrie(keySize int, container func(bool) Container) *Trie {
 	return &Trie{
 		root:      newTrieNode(0, nil, nil, container),
 		keySize:   keySize,
@@ -30,12 +30,12 @@ type TrieNode struct {
 	children Container
 }
 
-func newTrieNode(k byte, key []byte, val interface{}, nodeContainer func() Container) *TrieNode {
+func newTrieNode(k byte, key []byte, val interface{}, nodeContainer func(bool) Container) *TrieNode {
 	if nodeContainer == nil {
 		panic("container is nil")
 	}
 	return &TrieNode{
-		children: nodeContainer(),
+		children: nodeContainer(false),
 		nodeKey:  k,
 		key:      key,
 		val:      val,
@@ -51,6 +51,9 @@ func (t *Trie) Set(key []byte, v interface{}) {
 	var ok bool
 	for level, nodeKey := range key {
 		var node *TrieNode
+		if cur.children == nil {
+			cur.children = t.container(true)
+		}
 		if node, ok = cur.children.Get(nodeKey); !ok {
 			if level == t.keySize-1 {
 				node = newTrieNode(nodeKey, key, v, t.container)

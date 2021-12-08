@@ -6,9 +6,12 @@ type LinkMap struct {
 	tail    *TrieNode
 }
 
-func NewLinkmap() Container {
+func NewLinkmap(init bool) Container {
+	if !init {
+		return nil
+	}
 	return &LinkMap{
-		buckets: make(map[byte]*TrieNode, 1),
+		buckets: make(map[byte]*TrieNode, 2),
 	}
 }
 
@@ -67,11 +70,17 @@ func (m *LinkMap) Set(k byte, v *TrieNode) {
 }
 
 func (m *LinkMap) Get(k byte) (*TrieNode, bool) {
+	if m == nil {
+		return nil, false
+	}
 	v, ok := m.buckets[k]
 	return v, ok
 }
 
 func (m *LinkMap) Del(k byte) bool {
+	if m == nil {
+		return false
+	}
 	v, ok := m.buckets[k]
 	if ok {
 		prev := v.prev
@@ -89,6 +98,9 @@ func (m *LinkMap) Del(k byte) bool {
 }
 
 func (m *LinkMap) Prev(k uint8) *TrieNode {
+	if m == nil {
+		return nil
+	}
 	v, ok := m.buckets[k]
 	if ok {
 		return v.prev
@@ -96,6 +108,9 @@ func (m *LinkMap) Prev(k uint8) *TrieNode {
 	return nil
 }
 func (m *LinkMap) Next(k byte) *TrieNode {
+	if m == nil {
+		return nil
+	}
 	v, ok := m.buckets[k]
 	if ok {
 		return v.next
@@ -103,18 +118,27 @@ func (m *LinkMap) Next(k byte) *TrieNode {
 	return nil
 }
 func (m *LinkMap) Head() *TrieNode {
+	if m == nil {
+		return nil
+	}
 	if m.tail != nil {
 		return m.head
 	}
 	return m.head
 }
 func (m *LinkMap) Tail() *TrieNode {
+	if m == nil {
+		return nil
+	}
 	if m.tail != nil {
 		return m.tail
 	}
 	return m.tail
 }
 func (m *LinkMap) Keys() []byte {
+	if m == nil {
+		return nil
+	}
 	var keys = make([]byte, 0, len(m.buckets))
 	for cur := m.head; cur != nil; cur = cur.next {
 		keys = append(keys, cur.nodeKey)
