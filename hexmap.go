@@ -56,6 +56,10 @@ func (m *HexMap) Del(k byte) bool {
 	}
 	k = toIndex(k)
 	v := m.buckets[k]
+	defer func() {
+		v.Free()
+		v = nil
+	}()
 	if v != nil {
 		prev := v.prev
 		next := v.next

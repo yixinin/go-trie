@@ -42,6 +42,18 @@ func newTrieNode(k byte, key []byte, val interface{}, nodeContainer func(bool) C
 	}
 }
 
+func (node *TrieNode) Free() {
+	if node == nil {
+		return
+	}
+	node.children = nil
+	node.key = nil
+	node.next = nil
+	node.prev = nil
+	node.val = nil
+	node = nil
+}
+
 func (t *Trie) Set(key []byte, v interface{}) {
 	if len(key) != t.keySize {
 		panic("key size should be " + strconv.Itoa(t.keySize))

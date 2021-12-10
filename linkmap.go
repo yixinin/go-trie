@@ -82,6 +82,10 @@ func (m *LinkMap) Del(k byte) bool {
 		return false
 	}
 	v, ok := m.buckets[k]
+	defer func() {
+		v.Free()
+		v = nil
+	}()
 	if ok {
 		prev := v.prev
 		next := v.next

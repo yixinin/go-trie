@@ -37,6 +37,10 @@ func (m *Nmap) Get(k byte) (*TrieNode, bool) {
 func (m *Nmap) Del(k byte) bool {
 	k = k - '0'
 	v := m.buckets[k]
+	defer func() {
+		v.Free()
+		v = nil
+	}()
 	if v != nil {
 		prev := v.prev
 		next := v.next
