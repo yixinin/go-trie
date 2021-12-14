@@ -162,6 +162,8 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 				for i := int(node.nodeKey - 1); i >= 0; i-- {
 					if cur.children[i] > 0 {
 						node.prev = cur.children[i]
+						// set prev next to node
+
 						break
 					}
 				}
@@ -171,6 +173,15 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 				for i := int(node.nodeKey + 1); i < 255; i++ {
 					if cur.children[i] > 0 {
 						node.prev = cur.children[i]
+						// set next prev to node
+						next, err := t.readTireNode(cur.children[i], byte(i), isLeaf)
+						if err != nil {
+							return err
+						}
+						next.prev = node.self
+						if err := t.saveTrieNode(next); err != nil {
+							return err
+						}
 						break
 					}
 				}
@@ -179,13 +190,22 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 			// set prev if node is head
 			if node.prev == 0 {
 				if cur.prev > 0 {
-					prev, err := t.readTireNode(cur.prev, 0, isLeaf)
+					parentPrev, err := t.readTireNode(cur.prev, 0, isLeaf)
 					if err != nil {
 						return err
 					}
 					for i := 255; i >= 0; i-- {
-						if prev.children[i] > 0 {
-							node.prev = prev.children[i]
+						if parentPrev.children[i] > 0 {
+							node.prev = parentPrev.children[i]
+							// set prev next to node
+							prev, err := t.readTireNode(parentPrev.children[i], byte(i), isLeaf)
+							if err != nil {
+								return err
+							}
+							prev.next = node.self
+							if err := t.saveTrieNode(prev); err != nil {
+								return err
+							}
 							break
 						}
 					}
@@ -195,13 +215,22 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 			//set next if node is tail
 			if node.next == 0 {
 				if cur.next > 0 {
-					next, err := t.readTireNode(cur.next, 0, isLeaf)
+					parentNext, err := t.readTireNode(cur.next, 0, isLeaf)
 					if err != nil {
 						return err
 					}
 					for i := 0; i < 256; i++ {
-						if next.children[i] > 0 {
-							node.prev = next.children[i]
+						if parentNext.children[i] > 0 {
+							node.next = parentNext.children[i]
+							// set next prev to node
+							next, err := t.readTireNode(parentNext.children[i], byte(i), isLeaf)
+							if err != nil {
+								return err
+							}
+							next.prev = node.self
+							if err := t.saveTrieNode(next); err != nil {
+								return err
+							}
 							break
 						}
 					}
@@ -213,7 +242,6 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 			if err := t.saveTrieNode(cur); err != nil {
 				return err
 			}
-
 			cur = node
 		} else {
 			// read exsit node
