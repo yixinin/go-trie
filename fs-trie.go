@@ -81,8 +81,8 @@ func (node *FsTrieNode) marshalLeaf() []byte {
 	// 计算大小
 	var keySize = len(node.key)
 	var valSize = len(node.val)
-	var size = 33 + keySize + valSize
-	var buf = make([]byte, size)
+	var size = 25 + keySize + valSize
+	var buf = make([]byte, size+8)
 	binary.BigEndian.PutUint64(buf[:8], uint64(size))
 	binary.BigEndian.PutUint64(buf[8:16], node.self)
 	binary.BigEndian.PutUint64(buf[16:24], node.prev)
@@ -128,8 +128,14 @@ func NewFsTrie(filename string, keySize int) (*FsTrie, error) {
 		return nil, err
 	}
 	t.fileSize = uint64(fstat.Size())
+	if t.fileSize > 0 {
+		return t, nil
+	}
 	var node = NewFsTrieNode(0, 0)
-	return t, t.saveTrieNode(node)
+	if err := t.saveTrieNode(node); err != nil {
+		return nil, err
+	}
+	return t, nil
 }
 func (t *FsTrie) Set(key []byte, val []byte) error {
 	if len(key) != t.keySize {
@@ -145,12 +151,12 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 			// set new node
 			var node *FsTrieNode
 			if isLeaf {
-				node = NewFsTrieNode(k, t.fileSize)
-			} else {
 				node = NewFsTrieLeaf(k, t.fileSize, key, val)
 				t.size++
+			} else {
+				node = NewFsTrieNode(k, t.fileSize)
 			}
-			cur.children[cur.nodeKey] = node.self
+			cur.children[node.nodeKey] = node.self
 			// set prev
 			if node.nodeKey > 0 {
 				for i := int(node.nodeKey - 1); i >= 0; i-- {
@@ -204,6 +210,10 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 			if err := t.saveTrieNode(node); err != nil {
 				return err
 			}
+			if err := t.saveTrieNode(cur); err != nil {
+				return err
+			}
+
 			cur = node
 		} else {
 			// read exsit node
@@ -252,9 +262,9 @@ func (t *FsTrie) readTireNode(offset uint64, k byte, isLeaf bool) (*FsTrieNode, 
 	var child *FsTrieNode
 	var err error
 	if isLeaf {
-		child, err = t.readNode(offset)
-	} else {
 		child, err = t.readLeaf(offset)
+	} else {
+		child, err = t.readNode(offset)
 	}
 	if err != nil {
 		return nil, err
@@ -291,7 +301,10 @@ func (t *FsTrie) readLeaf(offset uint64) (*FsTrieNode, error) {
 	var size = binary.BigEndian.Uint64(buf[:])
 	var bbuf = make([]byte, size)
 	n, err = t.fs.ReadAt(bbuf, int64(offset)+8)
-	if n != 8 {
+	if err != nil {
+		return nil, err
+	}
+	if n != int(size) {
 		return nil, errors.New("leaf node data size not match")
 	}
 	var node = new(FsTrieNode)
@@ -304,6 +317,9 @@ func (t *FsTrie) saveTrieNode(node *FsTrieNode) error {
 	_, err := t.fs.WriteAt(buf[:], int64(node.self))
 	if err != nil {
 		return err
+	}
+	if fileSize := node.self + uint64(len(buf)); t.fileSize < fileSize {
+		t.fileSize = fileSize
 	}
 	return nil
 }
