@@ -1,7 +1,6 @@
 package trie
 
 import (
-	"log"
 	"strconv"
 )
 
@@ -70,9 +69,6 @@ func (t *Trie) Set(key []byte, val interface{}) {
 	var ok bool
 	for level, nodeKey := range key {
 		var node *TrieNode
-		if cur.children == nil {
-			log.Println(level)
-		}
 		if node, ok = cur.children.Get(nodeKey); !ok {
 			if level == t.keySize-1 {
 				node = newTrieNodeLeaf(nodeKey, key, val)
