@@ -24,23 +24,19 @@ type FsTrieNode struct {
 	isLeaf   bool
 }
 
-func NewFsTrieNode(k byte, offset uint64) *FsTrieNode {
-	var node = &FsTrieNode{
-		self:    offset,
-		nodeKey: k,
-		isLeaf:  false,
-	}
+func (node *FsTrieNode) initFsTrieNode(k byte, offset uint64) *FsTrieNode {
+	node.self = offset
+	node.nodeKey = k
+	node.isLeaf = false
 	return node
 }
 
-func NewFsTrieLeaf(k byte, offset uint64, key []byte, val []byte) *FsTrieNode {
-	var node = &FsTrieNode{
-		self:    offset,
-		nodeKey: k,
-		key:     key,
-		val:     val,
-		isLeaf:  true,
-	}
+func (node *FsTrieNode) initFsTrieLeaf(k byte, offset uint64, key []byte, val []byte) *FsTrieNode {
+	node.self = offset
+	node.nodeKey = k
+	node.key = key
+	node.val = val
+	node.isLeaf = true
 	return node
 }
 
@@ -69,20 +65,20 @@ func (node *FsTrieNode) marshal() []byte {
 }
 
 func (node *FsTrieNode) unmarshalLeaf(keySize int, buf []byte) {
-	// var size = binary.BigEndian.Uint64(buf[:8])
-	node.self = binary.BigEndian.Uint64(buf[:8])
-	node.prev = binary.BigEndian.Uint64(buf[8:16])
-	node.next = binary.BigEndian.Uint64(buf[16:24])
-	node.nodeKey = buf[24]
-	node.key = buf[25 : 25+keySize]
-	node.val = buf[25+keySize:]
+	// node.self = binary.BigEndian.Uint64(buf[:8])
+	node.self = binary.BigEndian.Uint64(buf[8:16])
+	node.prev = binary.BigEndian.Uint64(buf[16:24])
+	node.next = binary.BigEndian.Uint64(buf[24:32])
+	node.nodeKey = buf[32]
+	node.key = buf[33 : 33+keySize]
+	node.val = buf[33+keySize:]
 }
 func (node *FsTrieNode) marshalLeaf() []byte {
 	// 计算大小
 	var keySize = len(node.key)
 	var valSize = len(node.val)
-	var size = 25 + keySize + valSize
-	var buf = make([]byte, size+8)
+	var size = 33 + keySize + valSize
+	var buf = make([]byte, size)
 	binary.BigEndian.PutUint64(buf[:8], uint64(size))
 	binary.BigEndian.PutUint64(buf[8:16], node.self)
 	binary.BigEndian.PutUint64(buf[16:24], node.prev)
@@ -96,7 +92,6 @@ func (node *FsTrieNode) marshalLeaf() []byte {
 type FsTrie struct {
 	root      uint64
 	fs        *os.File
-	container func() Container
 	nodePool  *sync.Pool
 	keySize   int
 	size      int
@@ -131,12 +126,44 @@ func NewFsTrie(filename string, keySize int) (*FsTrie, error) {
 	if t.fileSize > 0 {
 		return t, nil
 	}
-	var node = NewFsTrieNode(0, 0)
+	var node = t.getTrieNodeForUseage()
 	if err := t.saveTrieNode(node); err != nil {
 		return nil, err
 	}
+	t.putTrieNode(node)
 	return t, nil
 }
+
+func (t *FsTrie) getTrieNodeForUseage() *FsTrieNode {
+	node := t.nodePool.Get().(*FsTrieNode)
+	return node
+}
+
+func (t *FsTrie) newTrieNode(k byte, offset uint64) *FsTrieNode {
+	return t.getTrieNodeForUseage().initFsTrieNode(k, offset)
+}
+
+func (t *FsTrie) newTrieNodeLeaf(k byte, offset uint64, key, val []byte) *FsTrieNode {
+	return t.getTrieNodeForUseage().initFsTrieLeaf(k, offset, key, val)
+}
+
+func (t *FsTrie) putTrieNode(node *FsTrieNode) {
+	node.self = 0
+	node.prev = 0
+	node.next = 0
+	node.nodeKey = 0
+	node.key = nil
+	node.val = nil
+	node.isLeaf = false
+	for i, v := range node.children {
+		if v == 0 {
+			continue
+		}
+		node.children[i] = 0
+	}
+	t.nodePool.Put(node)
+}
+
 func (t *FsTrie) Set(key []byte, val []byte) error {
 	if len(key) != t.keySize {
 		return fmt.Errorf("key size should be %s", strconv.Itoa(t.keySize))
@@ -151,10 +178,10 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 			// set new node
 			var node *FsTrieNode
 			if isLeaf {
-				node = NewFsTrieLeaf(k, t.fileSize, key, val)
+				node = t.newTrieNodeLeaf(k, t.fileSize, key, val)
 				t.size++
 			} else {
-				node = NewFsTrieNode(k, t.fileSize)
+				node = t.newTrieNode(k, t.fileSize)
 			}
 			cur.children[node.nodeKey] = node.self
 			// set prev
@@ -163,7 +190,15 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 					if cur.children[i] > 0 {
 						node.prev = cur.children[i]
 						// set prev next to node
-
+						prev, err := t.readTireNode(cur.children[i], byte(i), isLeaf)
+						if err != nil {
+							return err
+						}
+						prev.next = node.self
+						if err := t.saveTrieNode(prev); err != nil {
+							return err
+						}
+						t.putTrieNode(prev)
 						break
 					}
 				}
@@ -182,6 +217,7 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 						if err := t.saveTrieNode(next); err != nil {
 							return err
 						}
+						t.putTrieNode(next)
 						break
 					}
 				}
@@ -206,6 +242,7 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 							if err := t.saveTrieNode(prev); err != nil {
 								return err
 							}
+							t.putTrieNode(prev)
 							break
 						}
 					}
@@ -231,6 +268,7 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 							if err := t.saveTrieNode(next); err != nil {
 								return err
 							}
+							t.putTrieNode(next)
 							break
 						}
 					}
@@ -242,10 +280,13 @@ func (t *FsTrie) Set(key []byte, val []byte) error {
 			if err := t.saveTrieNode(cur); err != nil {
 				return err
 			}
+			t.putTrieNode(cur)
 			cur = node
 		} else {
 			// read exsit node
-			cur, err = t.readTireNode(cur.children[k], k, isLeaf)
+			offset := cur.children[k]
+			t.putTrieNode(cur)
+			cur, err = t.readTireNode(offset, k, isLeaf)
 			if err != nil {
 				return err
 			}
@@ -274,7 +315,9 @@ func (t *FsTrie) Get(key []byte) ([]byte, error) {
 			return nil, errors.New("not found")
 		} else {
 			// read exsit node
-			cur, err = t.readTireNode(cur.children[k], k, isLeaf)
+			offset := cur.children[k]
+			t.putTrieNode(cur)
+			cur, err = t.readTireNode(offset, k, isLeaf)
 			if err != nil {
 				return nil, err
 			}
@@ -287,20 +330,20 @@ func (t *FsTrie) Get(key []byte) ([]byte, error) {
 }
 
 func (t *FsTrie) readTireNode(offset uint64, k byte, isLeaf bool) (*FsTrieNode, error) {
-	var child *FsTrieNode
+	var node *FsTrieNode
 	var err error
 	if isLeaf {
-		child, err = t.readLeaf(offset)
+		node, err = t.readLeaf(offset)
 	} else {
-		child, err = t.readNode(offset)
+		node, err = t.readNode(offset)
 	}
 	if err != nil {
 		return nil, err
 	}
-	if k > 0 && child.nodeKey != k {
-		return nil, fmt.Errorf("node not match expect:%d, real:%d", k, child.nodeKey)
+	if k > 0 && node.nodeKey != k {
+		return nil, fmt.Errorf("node not match expect:%d, real:%d", k, node.nodeKey)
 	}
-	return child, nil
+	return node, nil
 }
 
 func (t *FsTrie) readNode(offset uint64) (*FsTrieNode, error) {
@@ -312,7 +355,7 @@ func (t *FsTrie) readNode(offset uint64) (*FsTrieNode, error) {
 	if n != FsTrieNodeSize {
 		return nil, errors.New("node size not match")
 	}
-	var node = new(FsTrieNode)
+	var node = t.getTrieNodeForUseage()
 	node.unmarshal(buf)
 	return node, nil
 }
@@ -328,14 +371,14 @@ func (t *FsTrie) readLeaf(offset uint64) (*FsTrieNode, error) {
 	}
 	var size = binary.BigEndian.Uint64(buf[:])
 	var bbuf = make([]byte, size)
-	n, err = t.fs.ReadAt(bbuf, int64(offset)+8)
+	n, err = t.fs.ReadAt(bbuf, int64(offset))
 	if err != nil {
 		return nil, err
 	}
 	if n != int(size) {
 		return nil, errors.New("leaf node data size not match")
 	}
-	var node = new(FsTrieNode)
+	var node = t.getTrieNodeForUseage()
 	node.unmarshalLeaf(t.keySize, bbuf)
 	return node, nil
 }
