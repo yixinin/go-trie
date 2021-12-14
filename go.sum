@@ -1,3 +1,5 @@
+github.com/chainhelen/bptree v0.0.0-20190924074447-f0e7d6c66856 h1:tW+IjkoTMF1v+5i0ptAfp0eow/Hp4tndU1zgYScnQ4Q=
+github.com/chainhelen/bptree v0.0.0-20190924074447-f0e7d6c66856/go.mod h1:bz1YNxy6nyoXUSPYdrPP1TmwSODq9RMaPY6MLX2rArw=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
