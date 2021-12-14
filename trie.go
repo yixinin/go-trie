@@ -1,6 +1,7 @@
 package trie
 
 import (
+	"log"
 	"strconv"
 )
 
@@ -9,13 +10,13 @@ type Trie struct {
 	root      *TrieNode
 	head      *TrieNode
 	tail      *TrieNode
-	container func(bool) Container
+	container func() Container
 	size      int
 }
 
-func NewTrie(keySize int, container func(bool) Container) *Trie {
+func NewTrie(keySize int, container func() Container) *Trie {
 	return &Trie{
-		root:      newTrieNode(0, nil, nil, container),
+		root:      newTrieNode(0, container),
 		keySize:   keySize,
 		container: container,
 	}
@@ -30,15 +31,21 @@ type TrieNode struct {
 	children Container
 }
 
-func newTrieNode(k byte, key []byte, val interface{}, nodeContainer func(bool) Container) *TrieNode {
+func newTrieNodeLeaf(k byte, key []byte, val interface{}) *TrieNode {
+	return &TrieNode{
+		nodeKey: k,
+		key:     key,
+		val:     val,
+	}
+}
+
+func newTrieNode(k byte, nodeContainer func() Container) *TrieNode {
 	if nodeContainer == nil {
 		panic("container is nil")
 	}
 	return &TrieNode{
-		children: nodeContainer(false),
+		children: nodeContainer(),
 		nodeKey:  k,
-		key:      key,
-		val:      val,
 	}
 }
 
@@ -54,7 +61,7 @@ func (node *TrieNode) Free() {
 	node = nil
 }
 
-func (t *Trie) Set(key []byte, v interface{}) {
+func (t *Trie) Set(key []byte, val interface{}) {
 	if len(key) != t.keySize {
 		panic("key size should be " + strconv.Itoa(t.keySize))
 	}
@@ -64,14 +71,14 @@ func (t *Trie) Set(key []byte, v interface{}) {
 	for level, nodeKey := range key {
 		var node *TrieNode
 		if cur.children == nil {
-			cur.children = t.container(true)
+			log.Println(level)
 		}
 		if node, ok = cur.children.Get(nodeKey); !ok {
 			if level == t.keySize-1 {
-				node = newTrieNode(nodeKey, key, v, t.container)
+				node = newTrieNodeLeaf(nodeKey, key, val)
 				t.size++
 			} else {
-				node = newTrieNode(nodeKey, nil, nil, t.container)
+				node = newTrieNode(nodeKey, t.container)
 			}
 
 			cur.children.Set(nodeKey, node)
@@ -92,7 +99,7 @@ func (t *Trie) Set(key []byte, v interface{}) {
 				}
 			}
 		} else {
-			node.val = v
+			node.val = val
 		}
 		cur = node
 	}

@@ -6,10 +6,7 @@ type LinkMap struct {
 	tail    *TrieNode
 }
 
-func NewLinkmap(init bool) Container {
-	if !init {
-		return nil
-	}
+func NewLinkmap() Container {
 	return &LinkMap{
 		buckets: make(map[byte]*TrieNode, 2),
 	}

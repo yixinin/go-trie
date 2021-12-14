@@ -4,10 +4,7 @@ type HexMap struct {
 	buckets [16]*TrieNode
 }
 
-func NewHexMap(init bool) Container {
-	if !init {
-		return nil
-	}
+func NewHexMap() Container {
 	return &HexMap{}
 }
 
