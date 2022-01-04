@@ -19,7 +19,7 @@ func TestFsBytesTire(t *testing.T) {
 			return
 		}
 	}
-	var trie, err = NewFsTrie(filename, 12, NewFsByteMap)
+	var trie, err = NewFsTrie(filename, 12, NewFsLinkMap)
 	if err != nil {
 		t.Error(err)
 		return
